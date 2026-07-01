@@ -365,7 +365,7 @@
       <p class="lede">Order medicines, book lab tests with free home sample collection, or see a visiting specialist — all from one neighbourhood health desk.</p>
       <div class="hero-actions">
         <a href="#pharmacy" class="btn btn-primary">Start an order</a>
-        <a href="tel:+919999999999" class="btn btn-ghost">📞 Call the desk</a>
+        <a href="tel:+918457874138" class="btn btn-ghost">📞 Call the desk</a>
       </div>
     </div>
     <div class="hero-tiles reveal">
@@ -441,7 +441,7 @@
         <h3>Have a prescription?</h3>
         <p>Skip the typing — send a photo of your prescription straight to our pharmacist and we'll take it from there.</p>
         <a class="btn btn-whatsapp btn-block" id="rxWhatsapp" target="_blank" rel="noopener"
-           href="https://wa.me/919999999999?text=Hi%20OMM%20Health%20Care%2C%20I%27d%20like%20to%20order%20medicines.%20I%27m%20attaching%20my%20prescription%20photo.">
+           href="https://wa.me/918457874138?text=Hi%20OMM%20Health%20Care%2C%20I%27d%20like%20to%20order%20medicines.%20I%27m%20attaching%20my%20prescription%20photo.">
           💬 Send on WhatsApp
         </a>
         <div class="chip-row" id="categoryChips">
@@ -501,8 +501,9 @@
     </div>
     <div class="footer-col">
       <h4>Reach us</h4>
-      <p><a href="tel:+919999999999">📞 +91 99999 99999</a></p>
-      <p><a href="https://wa.me/919999999999?text=Hi%20OMM%20Health%20Care%2C%20I%20have%20a%20question." target="_blank" rel="noopener">💬 Chat on WhatsApp</a></p>
+      <p><a href="tel:+918457874138">📞 Call desk: +91 84578 74138</a></p>
+      <p><a href="tel:+919437161132">📞 Appointments: +91 94371 61132</a></p>
+      <p><a href="https://wa.me/918457874138?text=Hi%20OMM%20Health%20Care%2C%20I%20have%20a%20question." target="_blank" rel="noopener">💬 Chat on WhatsApp</a></p>
       <p>🕘 Mon–Sat · 9:00 AM – 9:00 PM<br>Sun · 9:00 AM – 1:00 PM</p>
     </div>
     <div class="footer-col">
@@ -551,7 +552,7 @@
     <label>Delivery address<textarea id="custAddress" rows="2" placeholder="House / street / landmark"></textarea></label>
 
     <button class="btn btn-primary btn-block" id="placeOrderBtn" type="button" disabled>Place Order</button>
-    <p class="disclaimer">Tapping "Place Order" opens WhatsApp with your order summary — please send it to confirm.</p>
+    <p class="disclaimer">Tapping "Place Order" opens WhatsApp with your order summary — please send it to confirm. We'll also prepare an email copy for our team.</p>
   </div>
 </aside>
 
@@ -583,6 +584,7 @@
       <strong class="ticket-number" id="confirmToken">#OMM-0000</strong>
     </div>
     <p id="confirmMessage"></p>
+    <button class="btn btn-primary btn-block" id="confirmEmailBtn" type="button" style="margin-bottom:10px;background:transparent;border:1.5px solid var(--teal-700);color:var(--teal-900);">📧 Open email copy for OMM team</button>
     <button class="btn btn-primary btn-block" id="confirmDone" type="button">Done</button>
   </div>
 </div>
@@ -657,7 +659,29 @@
     {id:"bajoria", tag:"URO", name:"Dr. Suyash Bajoria", qualification:"Urologist", hospital:"SUM Hospital, Bhubaneswar", scheduleText:"4th Sunday of every month · 4:00 – 5:00 PM", slot:"4:00 – 5:00 PM", rule:{type:"nth", day:0, n:[4]}}
   ];
 
-  const WA_NUMBER = "919999999999"; // TODO: replace with the real WhatsApp Business number
+  // Call desk / general orders WhatsApp & phone number
+  const WA_NUMBER = "918457874138";
+  // Appointment booking WhatsApp & phone number
+  const WA_BOOKING_NUMBER = "919437161132";
+  // Every order & appointment booking should be copied to these addresses.
+  // NOTE: a static page cannot send email on its own — there is no server here to do the
+  // sending automatically. This builds a ready-to-go email (all 3 addresses pre-filled,
+  // subject + full details in the body) and opens it in the visitor's email app, the same
+  // way the WhatsApp message is opened. Someone still has to tap "Send" in their mail app.
+  // For fully automatic, no-tap sending you'd need a backend or a service like
+  // Formspree / EmailJS / Google Apps Script wired up with real credentials.
+  const NOTIFY_EMAILS = ["ommhealthcare2025@gmail.com","mohitkumarsahu235@gmail.com","manassahu14145@gmail.com"];
+
+  let lastEmailDraft = null; // {subject, body} for the "open email copy" button in the confirmation modal
+
+  function buildMailtoUrl(subject, body){
+    const to = NOTIFY_EMAILS.join(",");
+    return `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  }
+  function openEmailNotification(subject, body){
+    lastEmailDraft = {subject, body};
+    window.open(buildMailtoUrl(subject, body), "_blank");
+  }
 
   /* ---------------- STATE ---------------- */
   let cart = [];
@@ -846,7 +870,7 @@
         <p class="doctor-quali">Coming soon</p>
         <p class="doctor-meta">We're onboarding a specialist for joint &amp; autoimmune care.</p>
         <a class="btn btn-ghost btn-block" target="_blank" rel="noopener"
-           href="https://wa.me/${WA_NUMBER}?text=Hi%20OMM%20Health%20Care%2C%20please%20notify%20me%20when%20the%20Rheumatologist%20OPD%20starts.">
+           href="https://wa.me/${WA_BOOKING_NUMBER}?text=Hi%20OMM%20Health%20Care%2C%20please%20notify%20me%20when%20the%20Rheumatologist%20OPD%20starts.">
           💬 Notify me on WhatsApp
         </a>
       </div>`;
@@ -1006,9 +1030,11 @@
       const distLabel = distance==="lt5" ? "Within 5 km (Free)" : distance==="5to15" ? "5–15 km (+₹49)" : "15–30 km (+₹69)";
       const token = nextToken("OMM");
       const lines = cart.map(i => `• ${i.name} x${i.qty} — ₹${i.price*i.qty}`).join("\n");
-      const msg = `Hi OMM Health Care, I would like to place a home delivery order.\nToken: ${token}\n\n${lines}\n\nSubtotal: ₹${subtotal.toFixed(0)}\n15% discount: −₹${discount.toFixed(0)}\nDelivery (${distLabel}): ₹${deliveryCharge}\nTotal: ₹${total.toFixed(0)}\n\nName: ${name}\nPhone: ${phone}\nAddress: ${address}`;
-      window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
-      showConfirmation(token, "Order placed", "We've received your order — please send the WhatsApp message that just opened to confirm. Keep this token handy when our rider arrives.");
+      const detailBody = `Token: ${token}\n\n${lines}\n\nSubtotal: ₹${subtotal.toFixed(0)}\n15% discount: −₹${discount.toFixed(0)}\nDelivery (${distLabel}): ₹${deliveryCharge}\nTotal: ₹${total.toFixed(0)}\n\nName: ${name}\nPhone: ${phone}\nAddress: ${address}`;
+      const waMsg = `Hi OMM Health Care, I would like to place a home delivery order.\n${detailBody}`;
+      window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(waMsg)}`, "_blank");
+      openEmailNotification(`New order — Token ${token}`, `New home delivery order placed on the website.\n\n${detailBody}`);
+      showConfirmation(token, "Order placed", "We've received your order — please send the WhatsApp message that just opened to confirm, and the email copy if it didn't send automatically. Keep this token handy when our rider arrives.");
       cart = [];
       afterCartChange();
       $("#custName").value = ""; $("#custPhone").value = ""; $("#custAddress").value = "";
@@ -1045,15 +1071,21 @@
 
       $("#apptError").hidden = true;
       const token = nextToken("OMM-A");
-      const msg = `Hi OMM Health Care, I'd like to confirm an appointment.\nToken: ${token}\n\nDoctor: ${currentDoctor.name.replace(/<[^>]+>/g,"")}\nLocation: ${currentDoctor.hospital}\nDate: ${formatDate(dateStr)}\nSlot: ${currentDoctor.slot}\n\nPatient: ${name}\nPhone: ${phone}${notes ? "\nNotes: "+notes : ""}`;
-      window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`, "_blank");
+      const docName = currentDoctor.name.replace(/<[^>]+>/g,"");
+      const detailBody = `Token: ${token}\n\nDoctor: ${docName}\nLocation: ${currentDoctor.hospital}\nDate: ${formatDate(dateStr)}\nSlot: ${currentDoctor.slot}\n\nPatient: ${name}\nPhone: ${phone}${notes ? "\nNotes: "+notes : ""}`;
+      const waMsg = `Hi OMM Health Care, I'd like to confirm an appointment.\n${detailBody}`;
+      window.open(`https://wa.me/${WA_BOOKING_NUMBER}?text=${encodeURIComponent(waMsg)}`, "_blank");
+      openEmailNotification(`New appointment booking — Token ${token}`, `New doctor appointment booked on the website.\n\n${detailBody}`);
       hideOverlay("#apptOverlay");
-      showConfirmation(token, "Appointment requested", `Please send the WhatsApp message that just opened to confirm your slot on ${formatDate(dateStr)}.`);
+      showConfirmation(token, "Appointment requested", `Please send the WhatsApp message that just opened to confirm your slot on ${formatDate(dateStr)}, and the email copy if it didn't send automatically.`);
     });
 
     // Confirmation modal close
     $("#confirmClose").addEventListener("click", () => hideOverlay("#confirmOverlay"));
     $("#confirmDone").addEventListener("click", () => hideOverlay("#confirmOverlay"));
+    $("#confirmEmailBtn").addEventListener("click", () => {
+      if(lastEmailDraft) window.open(buildMailtoUrl(lastEmailDraft.subject, lastEmailDraft.body), "_blank");
+    });
     $("#confirmOverlay").addEventListener("click", e => { if(e.target.id==="confirmOverlay") hideOverlay("#confirmOverlay"); });
 
     // Mobile menu
